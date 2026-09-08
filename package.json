@@ -1,0 +1,42 @@
+{
+  "name": "claude-session-recall",
+  "version": "1.0.0",
+  "description": "Read your Claude Code session's own transcript. See how many times it was compacted, and whether a fact you are relying on was ever measured or only inherited from a summary.",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "claude-code-skill",
+    "compaction",
+    "context-window",
+    "transcript",
+    "ai-coding-assistant",
+    "anthropic",
+    "agent-memory"
+  ],
+  "homepage": "https://github.com/CavsSatyamKhatri/claude-session-recall#readme",
+  "bugs": "https://github.com/CavsSatyamKhatri/claude-session-recall/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CavsSatyamKhatri/claude-session-recall.git"
+  },
+  "license": "MIT",
+  "author": "Satyam Khatri",
+  "type": "module",
+  "bin": {
+    "claude-session-recall": "recall.mjs",
+    "recall-session": "recall.mjs"
+  },
+  "files": [
+    "recall.mjs",
+    "SKILL.md",
+    "hooks/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node hooks/prove.mjs"
+  }
+}

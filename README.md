@@ -6,7 +6,8 @@ which of the things it "knows" it actually measured.**
 Run this on your own session, before reading any further:
 
 ```bash
-node recall.mjs compactions
+git clone https://github.com/CavsSatyamKhatri/claude-session-recall.git
+node claude-session-recall/recall.mjs compactions
 ```
 
 ```
@@ -90,16 +91,33 @@ That distinction is the whole tool.
 
 ## Install
 
+**To give it to Claude Code as a skill** (so it reaches for it on its own):
+
 ```bash
 git clone https://github.com/CavsSatyamKhatri/claude-session-recall.git \
   ~/.claude/skills/session-recall
 ```
 
-That is the install. No dependencies, no build, no config, nothing running in the background — just
-Node's standard library and a file you already have. Claude Code picks the skill up on the next
-session, and the description tells it when to reach for it.
+That is the whole install. No dependencies, no build, no config, nothing running in the background —
+just Node's standard library and a file you already have. Claude Code picks the skill up on the next
+session, and `SKILL.md`'s description tells it when to reach for it.
 
-To try it without installing, clone anywhere and run `node recall.mjs compactions`.
+## What runs where
+
+The tool itself is **cross-platform**: `compactions`, `trace`, `claims`, `turns`, `find` and
+`around` read a transcript, and that is the same on macOS, Linux and Windows.
+
+The optional guards are not all universal, and it is better to say so than to have you find out:
+
+| guard | where it applies |
+|---|---|
+| an `Edit` whose text is not in the file | **everywhere** — and it is the one that fires most |
+| a backslash before a quote in a Python heredoc | everywhere |
+| `/tmp` crossing between Git Bash and a Windows interpreter | Windows only |
+| `&&` / `\|\|` in Windows PowerShell 5.1 | Windows only |
+
+On macOS and Linux the two Windows guards simply never fire; they check `process.platform` and stay
+out of the way.
 
 ## Commands
 
