@@ -28,6 +28,7 @@
   },
   "files": [
     "recall.mjs",
+    "demo.mjs",
     "SKILL.md",
     "hooks/",
     "README.md",
