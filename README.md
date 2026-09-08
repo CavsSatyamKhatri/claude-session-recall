@@ -135,6 +135,72 @@ so occurrences *after* the summary can include the query itself. The output sepa
 after for exactly this reason — only the "before" count is evidence. This was found by testing, not
 by reasoning: a search for a sentence that had never been said still returned one hit.
 
+## The guards (optional, and a different thing)
+
+Tracing an inherited claim fixes one failure. There is a second kind, and it is not a memory failure
+at all. Count it on your own record:
+
+```bash
+node recall.mjs errors
+```
+
+```
+  Mechanical failures in this record - each one a round-trip that could not have worked:
+
+       148   a script that could not parse            SyntaxError
+       136   a command that is not on this machine    command not found
+        66   /tmp meaning two different places        No such file or directory: '/tmp/
+        62   unbalanced quoting in a shell command    unexpected EOF while looking for matching
+        61   an Edit whose text was not in the file   String to replace not found
+        61   a backslash inside a Python string       unterminated string literal
+        18   && in Windows PowerShell                 is not a valid statement separator
+       ...
+```
+
+Again, your numbers will differ — the shape is what matters. **Every one of these was already
+covered by a rule that was present and was broken anyway.** The PowerShell one is the clearest case:
+*"`&&` is not available in this version"* sits in the tool description on **every single request**.
+It was still broken, repeatedly.
+
+So the problem is not that a rule is missing, or hard to find, or badly worded. A rule has to be
+*applied*, and attention is not reliable.
+
+A hook does not need attention. It runs outside the assistant's judgement, before the tool call, and
+refuses. `hooks/guard.mjs` refuses four things:
+
+- **`/tmp` crossing interpreters** — Git Bash resolves `/tmp` inside its own install; a
+  Windows-native `python`/`node` resolves it to `C:\tmp`. A file written by one and read by the
+  other is simply not there.
+- **A backslash before a quote in a Python heredoc** — `'\'` and `.replace('\','/')` are an
+  unterminated literal or a silent escape.
+- **`&&` or `||` in Windows PowerShell 5.1** — a parser error before anything runs.
+- **An `Edit` whose text is not in the file** — and it names *why*: line endings, indentation, or
+  the block having changed since it was read.
+
+```bash
+node hooks/install-hooks.mjs     # you run this, not the assistant
+```
+
+**You install it, deliberately.** A thing whose purpose is to limit the assistant's behaviour should
+not be installed by the assistant — and it cannot be: writing your hook and permission settings is
+refused, which is the correct design. The installer merges rather than replaces, backs the file up,
+prints exactly what changed, and does nothing at all if your `settings.json` is not valid JSON.
+
+```bash
+node hooks/prove.mjs             # 11 cases: 5 that must be refused, 6 that must not
+```
+
+Run that before trusting it. **A guard that cannot be seen to refuse is not a guard — and one that
+refuses the wrong thing is worse than none**, because it gets switched off within a week and takes
+the working guards with it. The allow cases are there for that reason and matter as much as the deny
+cases: ordinary `/tmp` use in bash, a heredoc with no backslash, PowerShell using `;`, an `Edit`
+that really does match.
+
+Two of those eleven cases failed the first two times it was run, and **both times the guard was
+right and the test was wrong** — searching with *less* indentation than the file has still matches,
+because the shorter run of spaces sits inside the longer one. That is the sort of thing only running
+it tells you.
+
 ## What it deliberately is not
 
 **It builds no index and caches nothing.** A transcript of several hundred million characters

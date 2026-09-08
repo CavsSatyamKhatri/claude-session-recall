@@ -69,6 +69,20 @@ assertion — `claims` builds that phrase for you.
 so occurrences *after* the summary can include the query itself. The output separates before and
 after for exactly this reason — only the "before" count is evidence.
 
+## The guards beside it
+
+`hooks/guard.mjs` is a PreToolUse hook, not part of this skill's instructions, and the distinction
+is the point. Everything it refuses was already covered by a rule that was present and broken
+anyway — `&&` in PowerShell sits in the tool description on every request. **A rule has to be
+applied; a hook does not.**
+
+It refuses `/tmp` paths that cross between Git Bash and a Windows-native interpreter, a backslash
+before a quote in a Python heredoc, `&&`/`||` in Windows PowerShell, and an `Edit` whose text is not
+in the file (naming whether it is line endings, indentation, or a block that has changed).
+
+The user installs it with `node hooks/install-hooks.mjs` — not you. Writing hook and permission
+settings is refused, and that is correct: a limit on your own behaviour is not yours to install.
+
 ## What it deliberately is not
 
 **It builds no index and caches nothing.** A transcript of several hundred million characters

@@ -196,7 +196,12 @@ const fileArg = args.indexOf('--file') >= 0 ? args[args.indexOf('--file') + 1] :
 const path = liveTranscript(fileArg)
 const say = (s) => console.log(s === undefined ? '' : s)
 
-if (cmd === 'compactions') {
+const COMMANDS = {}
+
+COMMANDS.compactions = {
+  use: "compactions",
+  blurb: "how many times this session was compacted, and when",
+  run() {
   const { lines } = load(path)
   const cs = compactions(lines)
   say(path)
@@ -213,7 +218,63 @@ if (cmd === 'compactions') {
           '  summary of ' + c.chars.toLocaleString() + ' chars')
     })
   }
-} else if (cmd === 'claims') {
+  },
+}
+
+COMMANDS.errors = {
+  use: "errors",
+  blurb: "mechanical failures in this record - the ones a hook could refuse",
+  run() {
+  /**
+   * Count the mechanical failures in your own record.
+   *
+   * Not "mistakes" in general - only the ones a machine can recognise from the error it produced,
+   * and therefore the only ones a hook could have refused before they happened. Each is a wasted
+   * round-trip: a command that could not have worked, sent anyway.
+   */
+  const PATTERNS = [
+    ['SyntaxError', 'a script that could not parse'],
+    ['command not found', 'a command that is not on this machine'],
+    ["No such file or directory: '/tmp/", '/tmp meaning two different places'],
+    ['unexpected EOF while looking for matching', 'unbalanced quoting in a shell command'],
+    ['String to replace not found', 'an Edit whose text was not in the file'],
+    ['unterminated string literal', 'a backslash inside a Python string'],
+    ['is not a valid statement separator', '&& in Windows PowerShell'],
+    ['ModuleNotFoundError', 'a Python import that is not installed'],
+    ['is not recognized as the name of a cmdlet', 'a unix command typed into PowerShell'],
+  ]
+  const { text } = load(path)
+  say(path)
+  say()
+  say('  Mechanical failures in this record - each one a round-trip that could not have worked:')
+  say()
+  let total = 0
+  const rows = PATTERNS.map(([p, what]) => {
+    let n = 0, from = 0
+    for (;;) { const i = text.indexOf(p, from); if (i < 0) break; n++; from = i + p.length }
+    total += n
+    return { p, what, n }
+  }).sort((a, b) => b.n - a.n)
+  for (const r of rows) {
+    if (r.n === 0) continue
+    say('    ' + String(r.n).padStart(6) + '   ' + r.what)
+    say('             ' + r.p)
+  }
+  say()
+  say('    ' + String(total).padStart(6) + '   in total')
+  say()
+  say('  Every one of these is recognisable before the command runs, which is what hooks/guard.mjs')
+  say('  refuses. Counting them here rather than quoting somebody else\'s number: yours are the')
+  say('  ones that matter, and they are the argument for installing the guards or not.')
+  say()
+  say('  (Some hits are the error being discussed rather than thrown - this counts text, not events.)')
+  },
+}
+
+COMMANDS.claims = {
+  use: "claims [n] [max]",
+  blurb: "what a summary asserts, each with a ready-made trace",
+  run() {
   const { lines } = load(path)
   const cs = compactions(lines, true)
   say(path)
@@ -240,7 +301,13 @@ if (cmd === 'compactions') {
       say('  ... ' + (found.length - (Number(args[2]) || 15)) + ' more; pass a count: recall claims ' + which + ' 40')
     }
   }
-} else if (cmd === 'trace') {
+  },
+}
+
+COMMANDS.trace = {
+  use: "trace \"<text>\"",
+  blurb: "where did this fact enter? the record, or only a summary?",
+  run() {
   const term = args[1]
   if (!term) { console.error('usage: recall trace "<exact text>"'); process.exit(2) }
   const { text, lines } = load(path)
@@ -290,7 +357,13 @@ if (cmd === 'compactions') {
       }
     }
   }
-} else if (cmd === 'turns') {
+  },
+}
+
+COMMANDS.turns = {
+  use: "turns [n]",
+  blurb: "the last n things the operator asked for, with line numbers",
+  run() {
   const limit = Number(args[1]) || 40
   const { lines } = load(path)
   const turns = humanTurns(lines)
@@ -301,7 +374,13 @@ if (cmd === 'compactions') {
     say('  line ' + String(t.line).padStart(7) + '  ' + t.when.slice(0, 16).replace('T', ' ') +
         '  ' + t.text.slice(0, 110))
   }
-} else if (cmd === 'find') {
+  },
+}
+
+COMMANDS.find = {
+  use: "find \"<text>\"",
+  blurb: "every byte-exact occurrence, with surrounding context",
+  run() {
   const term = args[1]
   if (!term) { console.error('usage: recall find "<exact text>"'); process.exit(2) }
   const pad = Number(args[2]) || 90
@@ -315,7 +394,13 @@ if (cmd === 'compactions') {
     say('  line ' + String(h.line).padStart(7) + '  ...' + s + '...')
   }
   if (hits.length === 0) say('  Not in the record.')
-} else if (cmd === 'around') {
+  },
+}
+
+COMMANDS.around = {
+  use: "around <line>",
+  blurb: "what was being worked on near that point",
+  run() {
   const target = Number(args[1])
   if (!target) { console.error('usage: recall around <line>'); process.exit(2) }
   const { lines } = load(path)
@@ -329,16 +414,27 @@ if (cmd === 'compactions') {
     say('  ' + (t.line <= target ? ' ' : '>') + ' line ' + String(t.line).padStart(7) +
         '  ' + t.when.slice(0, 16).replace('T', ' ') + '  ' + t.text.slice(0, 110))
   }
-} else {
+  },
+}
+
+/**
+ * One table, so a command that exists is listed and a listed command exists.
+ *
+ * The help used to be written out separately, and drifted the first time commands were added: two
+ * of them worked and appeared nowhere. Generating it from the same object the dispatch reads makes
+ * that impossible rather than unlikely.
+ */
+function help() {
+  const width = Math.max(...Object.values(COMMANDS).map((c) => c.use.length)) + 2
   say('recall - read this session\'s own record, so an inherited "fact" can be checked.')
   say()
-  say('  recall compactions      how many times this session was compacted, and when')
-  say('  recall trace "<text>"   where did this fact enter? the record, or only a summary?')
-  say('  recall turns [n]        the last n things the operator asked for, with line numbers')
-  say('  recall find "<text>"    every byte-exact occurrence, with surrounding context')
-  say('  recall around <line>    what was being worked on near that point')
+  for (const c of Object.values(COMMANDS)) say('  recall ' + c.use.padEnd(width) + c.blurb)
   say()
-  say('  --file <path>           an older transcript instead of the live one')
+  say('  --file ' + '<path>'.padEnd(width) + 'an older transcript instead of the live one')
   say()
   say('Nothing is written and nothing is cached; the record is searched directly.')
 }
+
+const chosen = COMMANDS[cmd]
+if (chosen) chosen.run()
+else help()
