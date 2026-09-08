@@ -5,11 +5,10 @@ which of the things it "knows" it actually measured.**
 
 ![recall compactions, run against a real Claude Code session: 28 compactions, and 495,488 characters of summary standing in for the record](docs/demo.gif)
 
-Run it on your own session, before reading any further:
+Run it on your own session, before reading any further. Nothing is installed:
 
 ```bash
-git clone https://github.com/CavsSatyamKhatri/claude-session-recall.git
-node claude-session-recall/recall.mjs compactions
+npx claude-session-recall compactions
 ```
 
 Your numbers will be different. That is the point — they are *yours*, and nothing else was going to
@@ -83,6 +82,13 @@ Two answers are possible, and they look nothing alike.
 That distinction is the whole tool.
 
 ## Install
+
+**Try it without installing anything:**
+
+```bash
+npx claude-session-recall compactions
+npx claude-session-recall claims
+```
 
 **To give it to Claude Code as a skill** (so it reaches for it on its own):
 
