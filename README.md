@@ -3,24 +3,17 @@
 **Your AI coding session has been compacted. It did not tell you how many times, and it cannot tell
 which of the things it "knows" it actually measured.**
 
-Run this on your own session, before reading any further:
+![recall compactions, run against a real Claude Code session: 28 compactions, and 495,488 characters of summary standing in for the record](docs/demo.gif)
+
+Run it on your own session, before reading any further:
 
 ```bash
 git clone https://github.com/CavsSatyamKhatri/claude-session-recall.git
 node claude-session-recall/recall.mjs compactions
 ```
 
-```
-  Compacted 28 time(s). Everything you "remember" from before the last one
-  reached you through a summary somebody wrote, not through the record.
-
-    # 1  line    2816  2026-08-04 06:47  summary of 16,517 chars
-    # 2  line    5885  2026-08-05 08:14  summary of 21,831 chars
-    ...
-```
-
-Your number will be different. That is the point — it is *your* number, and nothing else was going
-to tell you.
+Your numbers will be different. That is the point — they are *yours*, and nothing else was going to
+tell you.
 
 A Claude Code skill that reads the session's own transcript, so a fact that arrived through a
 compaction summary can be checked instead of repeated.
