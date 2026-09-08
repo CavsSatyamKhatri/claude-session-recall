@@ -212,11 +212,24 @@ COMMANDS.compactions = {
     say('  Compacted ' + cs.length + ' time(s). Everything you "remember" from before the last one')
     say('  reached you through a summary somebody wrote, not through the record.')
     say()
-    cs.forEach((c, n) => {
-      say('    #' + String(n + 1).padStart(2) + '  line ' + String(c.line).padStart(7) +
+
+    // The most recent few, not all of them. A long session produces dozens, and printing every
+    // one scrolls the count - the only number that matters here - off the top of the terminal.
+    // `recall compactions all` prints the lot.
+    const all = args[1] === 'all'
+    const shown = all ? cs : cs.slice(-6)
+    if (shown.length < cs.length) {
+      say('    ... ' + (cs.length - shown.length) + ' earlier, back to ' +
+          cs[0].when.slice(0, 10) + '    (recall compactions all)')
+    }
+    for (const c of shown) {
+      say('    #' + String(cs.indexOf(c) + 1).padStart(2) + '  line ' + String(c.line).padStart(7) +
           '  ' + c.when.slice(0, 16).replace('T', ' ') +
-          '  summary of ' + c.chars.toLocaleString() + ' chars')
-    })
+          '  summary of ' + c.chars.toLocaleString('en-US') + ' chars')
+    }
+    say()
+    say('  ' + cs.reduce((n, c) => n + c.chars, 0).toLocaleString('en-US') +
+        ' characters of summary have stood in for the record so far.')
   }
   },
 }
@@ -286,7 +299,7 @@ COMMANDS.claims = {
     const c = cs[Math.max(0, Math.min(cs.length, which) - 1)]
     const found = claimSentences(c.text)
     say('  Summary #' + which + ' of ' + cs.length + ', line ' + c.line + ', ' +
-        c.when.slice(0, 16).replace('T', ' ') + ', ' + c.chars.toLocaleString() + ' chars.')
+        c.when.slice(0, 16).replace('T', ' ') + ', ' + c.chars.toLocaleString('en-US') + ' chars.')
     say('  ' + found.length + ' sentence(s) in it assert something checkable.')
     say()
     say('  This is a starting list, not a verdict: a sentence here is not wrong, and one that is')
