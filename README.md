@@ -108,8 +108,9 @@ The tool itself is **cross-platform**: `compactions`, `trace`, `claims`, `turns`
 
 The optional guards are not all universal, and it is better to say so than to have you find out:
 
-| guard | where it applies |
+| hook / guard | where it applies |
 |---|---|
+| `claims` on compaction (`post-compact.mjs`) | **everywhere** — nothing platform-specific in it |
 | an `Edit` whose text is not in the file | **everywhere** — and it is the one that fires most |
 | a backslash before a quote in a Python heredoc | everywhere |
 | `/tmp` crossing between Git Bash and a Windows interpreter | Windows only |
@@ -152,9 +153,46 @@ so occurrences *after* the summary can include the query itself. The output sepa
 after for exactly this reason — only the "before" count is evidence. This was found by testing, not
 by reasoning: a search for a sentence that had never been said still returned one hit.
 
+## The hook that runs `claims` for you
+
+*Added after measuring the honest answer to "does the assistant reach for this on its own?" — **no**.
+Installed, available, documented, and invoked **zero** times across a session of several hundred
+megabytes.*
+
+The reason turned out to be in the skill's own first paragraph. Its instruction said *use this when
+a fact arrived through a summary rather than from something you measured* — and a summarised fact is
+**indistinguishable** from a measured one. The trigger asked the assistant to notice exactly the
+thing the tool exists because nobody can notice.
+
+So `claims` now runs itself, at the one moment it is certainly relevant:
+
+```bash
+node hooks/install-hooks.mjs     # registers this and the guards below
+```
+
+Compaction happens → the hook runs `claims` → the new summary's checkable assertions arrive in
+context, each with its `trace` command already written out. Nothing has to be remembered.
+
+Three things it deliberately does:
+
+- **Says nothing when there is nothing to say.** No compaction, or a summary that asserts nothing
+  checkable, and it prints nothing at all. A hook that reports "nothing to report" every time is
+  noise, and noise gets switched off — taking the working guards with it.
+- **Caps the list at five.** This is a token cost paid on every compaction, and a wall of text is
+  skimmed exactly like no text at all.
+- **Can never fail a session.** Any error — a transcript it cannot read, a spawn that will not
+  start — exits silently.
+
+**It cannot be proved on demand, and that is stated rather than hidden.** A compaction is not
+something a test can cause. `prove.mjs` proves the *script*: given a transcript it says the right
+thing, given nothing worth saying it stays silent, and six claims are cut to five. It cannot prove
+the *event*. So the hook logs every run to `~/.claude/session-recall-postcompact.log` — check that
+file after your next compaction. Lines mean it fired; an empty file means the matcher is wrong, not
+that there was nothing to say, because it logs its silences too.
+
 ## The guards (optional, and a different thing)
 
-Tracing an inherited claim fixes one failure. There is a second kind, and it is not a memory failure
+The hook above fixes an attention failure. There is a second kind, and it is not a memory failure
 at all. Count it on your own record:
 
 ```bash
@@ -182,6 +220,9 @@ It was still broken, repeatedly.
 So the problem is not that a rule is missing, or hard to find, or badly worded. A rule has to be
 *applied*, and attention is not reliable.
 
+**That argument sat in this README for a while and was applied only to typos.** It was never turned
+on the tool's own main feature, which is why the section above exists.
+
 A hook does not need attention. It runs outside the assistant's judgement, before the tool call, and
 refuses. `hooks/guard.mjs` refuses four things:
 
@@ -204,7 +245,7 @@ refused, which is the correct design. The installer merges rather than replaces,
 prints exactly what changed, and does nothing at all if your `settings.json` is not valid JSON.
 
 ```bash
-node hooks/prove.mjs             # 11 cases: 5 that must be refused, 6 that must not
+node hooks/prove.mjs             # 15 cases: 5 refused, 6 allowed, 4 for the PostCompact hook
 ```
 
 Run that before trusting it. **A guard that cannot be seen to refuse is not a guard — and one that

@@ -1,6 +1,6 @@
 {
   "name": "claude-session-recall",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Read your Claude Code session's own transcript. See how many times it was compacted, and whether a fact you are relying on was ever measured or only inherited from a summary.",
   "keywords": [
     "claude",

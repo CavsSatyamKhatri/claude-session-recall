@@ -1,6 +1,6 @@
 ---
 name: session-recall
-description: Use when a fact arrived through a compaction summary rather than from something you measured this turn - versions, counts, "still pending", "already done", "last deployed on", anything inherited from earlier context. Reads the session's own transcript to show where the claim entered, so it can be checked instead of repeated. Also use when picking up a long-running session, when you cannot remember what was decided earlier, or when the user says "check this first".
+description: Use BEFORE writing a version, count, size, date or status ("still pending", "already deployed", "not built yet") into a document, commit message, plan or an answer to the user - unless you ran the command that produced it in this same turn. Also at the start of any resumed or compacted session, and whenever the user asks "are you sure", "check this first", or challenges something you stated. Reads the session's own transcript and shows whether a claim was ever measured or only inherited from a summary.
 ---
 
 # Session Recall
@@ -69,18 +69,45 @@ assertion — `claims` builds that phrase for you.
 so occurrences *after* the summary can include the query itself. The output separates before and
 after for exactly this reason — only the "before" count is evidence.
 
-## The guards beside it
+## Why the trigger above is worded the way it is
 
-`hooks/guard.mjs` is a PreToolUse hook, not part of this skill's instructions, and the distinction
-is the point. Everything it refuses was already covered by a rule that was present and broken
-anyway — `&&` in PowerShell sits in the tool description on every request. **A rule has to be
-applied; a hook does not.**
+*Changed 2026-09-09, after measuring.*
 
-It refuses `/tmp` paths that cross between Git Bash and a Windows-native interpreter, a backslash
+It used to read: *"use when a fact arrived through a compaction summary rather than from something
+you measured."* That instruction cannot be followed. This skill's own first paragraph says why — a
+summarised fact is **indistinguishable** from a measured one — so the trigger asked you to notice
+exactly the thing the skill exists because nobody can notice.
+
+The result was measurable rather than theoretical: installed, available, and invoked **zero** times
+across a session of several hundred megabytes, while other skills in the same folder fired normally.
+They fire on something observable — "make a page", "add a hook". This one fired on an internal state
+with no tell.
+
+So the trigger is now an **event you can see**: you are about to write a number down, or the session
+was just resumed. The one that matters most is the first. The failure it was written from was not a
+wrong thought — it was `"17 files"`, inherited from a pre-compaction script, typed into a document.
+Nothing was wrong until it was written.
+
+## The hooks beside it
+
+Two, and neither is part of these instructions — that distinction is the whole point. Everything
+they cover was already covered by a rule that was present and broken anyway: `&&` in PowerShell sits
+in the tool description on **every request**. **A rule has to be applied; a hook does not.**
+
+**`hooks/post-compact.mjs` — PostCompact.** Runs `claims` the moment a compaction happens and puts
+the new summary's checkable assertions into context, each with its `trace` command already written
+out. This is that same argument turned on this skill's own main feature, which it had never been.
+It stays silent when there is nothing checkable to report, caps the list at five, and can never fail
+a session. It cannot be proved on demand — a compaction is not triggerable — so it logs every run to
+`~/.claude/session-recall-postcompact.log`; that file answers "did it fire" the next day.
+
+**`hooks/guard.mjs` — PreToolUse.**
+
+Refuses `/tmp` paths that cross between Git Bash and a Windows-native interpreter, a backslash
 before a quote in a Python heredoc, `&&`/`||` in Windows PowerShell, and an `Edit` whose text is not
 in the file (naming whether it is line endings, indentation, or a block that has changed).
 
-The user installs it with `node hooks/install-hooks.mjs` — not you. Writing hook and permission
+The user installs both with `node hooks/install-hooks.mjs` — not you. Writing hook and permission
 settings is refused, and that is correct: a limit on your own behaviour is not yours to install.
 
 ## What it deliberately is not
