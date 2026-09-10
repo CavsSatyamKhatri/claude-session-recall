@@ -107,6 +107,12 @@ Refuses `/tmp` paths that cross between Git Bash and a Windows-native interprete
 before a quote in a Python heredoc, `&&`/`||` in Windows PowerShell, and an `Edit` whose text is not
 in the file (naming whether it is line endings, indentation, or a block that has changed).
 
+**The first three fire live in Claude Code** — confirmed 2026-09-10 by making each mistake on
+purpose. **The Edit one does not reach it here:** the Edit tool validates `old_string` before
+PreToolUse hooks, so its own `String to replace not found` comes back and the guard never speaks.
+The guard denies the identical payload correctly when handed it directly, so it is right and simply
+arrives late. Nothing to fix — but do not expect its better message in this harness.
+
 The user installs both with `node hooks/install-hooks.mjs` — not you. Writing hook and permission
 settings is refused, and that is correct: a limit on your own behaviour is not yours to install.
 

@@ -111,7 +111,7 @@ The optional guards are not all universal, and it is better to say so than to ha
 | hook / guard | where it applies |
 |---|---|
 | `claims` on compaction (`post-compact.mjs`) | **everywhere** — nothing platform-specific in it |
-| an `Edit` whose text is not in the file | **everywhere** — and it is the one that fires most |
+| an `Edit` whose text is not in the file | **pre-empted in Claude Code** — see the note below |
 | a backslash before a quote in a Python heredoc | everywhere |
 | `/tmp` crossing between Git Bash and a Windows interpreter | Windows only |
 | `&&` / `\|\|` in Windows PowerShell 5.1 | Windows only |
@@ -234,6 +234,24 @@ refuses. `hooks/guard.mjs` refuses four things:
 - **`&&` or `||` in Windows PowerShell 5.1** — a parser error before anything runs.
 - **An `Edit` whose text is not in the file** — and it names *why*: line endings, indentation, or
   the block having changed since it was read.
+
+> **Measured 2026-09-10, and it corrects a claim this README used to make.** The Edit case does not
+> reach the guard in Claude Code: the Edit tool validates `old_string` itself, *before* PreToolUse
+> hooks, so what comes back is its own `String to replace not found` and the guard never speaks.
+> Tried twice — a string that was never in the file, and one whose indentation differed — and both
+> times the harness answered. Handed the identical payload directly, the guard denies it correctly,
+> so the guard is right and simply arrives late.
+>
+> The three shell cases **do** fire live, each confirmed by making the mistake on purpose: `&&` in
+> PowerShell, `/tmp` crossing into a Windows-native interpreter, and a backslash before a quote in a
+> Python heredoc.
+>
+> This README previously called the Edit case "the one that fires most", from counting 61
+> `String to replace not found` errors in a transcript. Those 61 were the **harness** refusing, not
+> the guard — which is the same mistake in miniature that the rest of this tool is about: a number
+> that was real, attached to a conclusion nobody had checked. Keep the check: it costs nothing, its
+> message is the more diagnostic of the two, and a harness that does not validate `old_string` will
+> still be caught by it.
 
 ```bash
 node hooks/install-hooks.mjs     # you run this, not the assistant
