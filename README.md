@@ -235,12 +235,23 @@ refuses. `hooks/guard.mjs` refuses four things:
 - **An `Edit` whose text is not in the file** — and it names *why*: line endings, indentation, or
   the block having changed since it was read.
 
-> **Measured 2026-09-10, and it corrects a claim this README used to make.** The Edit case does not
-> reach the guard in Claude Code: the Edit tool validates `old_string` itself, *before* PreToolUse
-> hooks, so what comes back is its own `String to replace not found` and the guard never speaks.
-> Tried twice — a string that was never in the file, and one whose indentation differed — and both
-> times the harness answered. Handed the identical payload directly, the guard denies it correctly,
-> so the guard is right and simply arrives late.
+> **Measured 2026-09-10.** In Claude Code the Edit case is *sometimes* pre-empted, not always, and
+> the difference is which failure it is:
+>
+> | the Edit is wrong because… | who answers |
+> |---|---|
+> | the text is simply not in the file | the **harness** — its own `String to replace not found` |
+> | the text is there but the **line endings** differ (CRLF file, LF search) | the **guard**, by name |
+>
+> Both were measured the same day. The first was checked twice — a string that was never in the
+> file, and one whose indentation differed — and the harness answered both; handed the identical
+> payload directly, the guard denies it correctly, so it is right and simply arrives late there.
+> The second fired for real on a CRLF file an hour later, with the guard's own wording.
+>
+> An earlier version of this note said the Edit guard "does not reach the guard in Claude Code" —
+> full stop. That was measured on one failure shape and stated as though it covered all of them,
+> which is the same mistake as the "fires most" claim it was correcting. Two wrong claims in one
+> paragraph, both from generalising a single reading.
 >
 > The three shell cases **do** fire live, each confirmed by making the mistake on purpose: `&&` in
 > PowerShell, `/tmp` crossing into a Windows-native interpreter, and a backslash before a quote in a

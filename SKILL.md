@@ -108,10 +108,19 @@ before a quote in a Python heredoc, `&&`/`||` in Windows PowerShell, and an `Edi
 in the file (naming whether it is line endings, indentation, or a block that has changed).
 
 **The first three fire live in Claude Code** — confirmed 2026-09-10 by making each mistake on
-purpose. **The Edit one does not reach it here:** the Edit tool validates `old_string` before
-PreToolUse hooks, so its own `String to replace not found` comes back and the guard never speaks.
-The guard denies the identical payload correctly when handed it directly, so it is right and simply
-arrives late. Nothing to fix — but do not expect its better message in this harness.
+purpose.
+
+**The Edit one fires for some failures and is pre-empted for others**, measured the same day:
+
+- **text simply not in the file** → the harness answers first with its own
+  `String to replace not found`, and the guard never speaks. Handed the identical payload directly
+  it denies correctly, so it is right and arrives late.
+- **text present but the line endings differ** (a CRLF file, an LF search string) → **the guard
+  fires**, by name, and names line endings as the cause. That is the more useful message of the two,
+  and it is the one you get.
+
+*An earlier note here said the Edit guard never reaches the tool in this harness. That was one
+failure shape generalised into all of them.*
 
 The user installs both with `node hooks/install-hooks.mjs` — not you. Writing hook and permission
 settings is refused, and that is correct: a limit on your own behaviour is not yours to install.
